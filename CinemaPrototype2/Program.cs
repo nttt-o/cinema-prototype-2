@@ -8,7 +8,7 @@ class Program
         Administrator admin = new Administrator();
         Console.WriteLine("С началом работы! Вы находитесь в режиме администратора для ввода данных.");
         StartAdministratorInterface();
-
+        UserInterface();
     }
 
 
@@ -18,12 +18,21 @@ class Program
         int filmNum = GetPositiveInt();
         for (int i = 0; i < filmNum; i++)
         {
-            Console.WriteLine($"Введите данные для зала {i + 1}.");
+            Console.WriteLine($"\nВведите данные для фильма {i + 1}.");
             Administrator.AddNewFilm();
         }
 
-        Console.WriteLine("Введите число залов:"); // получаем информацию о залах
-        int hallsNum = GetPositiveInt();
+        Console.WriteLine("\nВведите число залов:"); // получаем информацию о залах
+        int hallsNum;
+        while (true)
+        {
+            hallsNum = GetPositiveInt();
+            if (hallsNum < filmNum)
+                Console.WriteLine("Залов должно быть не меньше, чем фильмов. Повторите попытку.");
+            else
+                break;
+        }
+
         for (int i = 0; i < hallsNum; i++)
         {
             Console.WriteLine($"\nВведите данные для зала {i + 1}.");
@@ -65,10 +74,10 @@ class Program
             Console.WriteLine();
 
             if (command == "1")
-                currUser.MakeOrder();
+                currUser.MakeOrders();
 
             else if (command == "2")
-                ReturnTickets();
+            { }//ReturnTickets();
 
             else if (command == "3")
                 return;
@@ -173,21 +182,31 @@ class Program
             Hall chosenHall = Hall.GetHallByName(chosenHallName);
 
             Console.WriteLine($"\nВыберите время для показа фильма {currFilm.name} в зале {chosenHallName}.");
-            DateTime showDate = GetDate();
 
+            DateTime showDate = GetDate();
+            foreach (Screening screening in currFilm.screenings)
+            {
+                if (screening.hall == chosenHall && screening.time == showDate)
+                {
+                    Console.WriteLine("Данный сеанс уже есть в базе.");
+                    return;
+                }
+            }
             Screening newScreening = new Screening { film = currFilm, hall = chosenHall, time = showDate };
             newScreening.SetInitialAvailability();
             newScreening.SetInitialPrices();
+            currFilm.screenings.Add(newScreening);
+
         }
     }
 
 
     class User
     {
-        public static List<User> all = new List<User>;
+        public static List<User> all = new List<User>();
 
         public int balance;
-        Dictionary<int, List<List<int>>> order = new Dictionary<int, List<List<int>>>();
+        Dictionary<Screening, List<List<int>>> orders = new Dictionary<Screening, List<List<int>>>();
 
         public void UpdateBalance()
         {
@@ -197,16 +216,115 @@ class Program
             Console.WriteLine("Пополнение прошло успешно!");
         }
 
-        public void MakeOrder()
+        public Dictionary<Screening, List<List<int>>> ReadOrder()
         {
-            Console.WriteLine("Выберите фильм");
+            Dictionary<Screening, List<List<int>>> currOrder = new Dictionary<Screening, List<List<int>>>();
+            string answer = "да";
+
+            Console.WriteLine("Выберите фильм.");
             Film chosenFilm = Film.ChooseFilm();
+            Console.WriteLine();
 
             List<Screening> relevantScreenings = chosenFilm.screenings.FindAll(screening => screening.time > DateTime.Now);
+            relevantScreenings.Sort((x, y) => x.time.CompareTo(y.time));
+            TextPrompt<string> scrChoicePrompt = new TextPrompt<string>("");
+
             for (int i = 0; i < relevantScreenings.Count; i++)
             {
-                Console.WriteLine($"{0}: {relevantScreenings[i].hall} {relevantScreenings[i].time}");
-            }
+                Console.WriteLine($"{i + 1,4}: {relevantScreenings[i].hall.name,15} {relevantScreenings[i].time.ToString("MM/dd/yyyy HH:mm"),16}");
+                scrChoicePrompt.AddChoice(Convert.ToString(i));
+            } // печатаю 
+
+            Console.WriteLine("\nВведите номер одного выбранного сеанса:");
+            int scrNum = int.Parse(AnsiConsole.Prompt(scrChoicePrompt)) - 1;
+            int indInScreenings = chosenFilm.FindScreeningIndexInList(relevantScreenings[scrNum]);
+
+            AnsiConsole.Write(new Markup("Доступные места [green](0 - место доступно;[/] [red] x - место выкуплено)[/]\n"));
+            chosenFilm.screenings[indInScreenings].Print_Hall_Data("availability");
+            AnsiConsole.Write(new Markup("Цены на билеты\n"));
+            chosenFilm.screenings[indInScreenings].Print_Hall_Data("prices");
+
+            // в currOrder записываются списки вида {<ряд>, <место>} c ключом Screening
+            do
+            {
+                try
+                {
+                    Console.WriteLine("\nПожалуйста, выберите места, которые вы хотите выкупить.");
+                    Console.WriteLine("Введите один номер места в формате '<номер ряда> <номер места>'.");
+
+                    string[] seatData = AnsiConsole.Prompt(new TextPrompt<string>("> ")).Split(' ');
+
+                    List<int> ticket = new List<int> { int.Parse(seatData[0]) - 1, int.Parse(seatData[1]) - 1 };
+                    int areRowSeatValid = chosenFilm.screenings[indInScreenings].priceData[ticket[0]][ticket[1]]; // ловим IndexOutOfRangeException до добавления к заказу
+
+                    // проверка, было ли это же место ранее добавлено в текущий заказ пользователя
+                    bool alreadyInOrder = false;
+
+                    if (currOrder.ContainsKey(chosenFilm.screenings[indInScreenings]))
+                    {
+                        foreach (var existingTicket in currOrder[chosenFilm.screenings[indInScreenings]])
+                        {
+                            if (ticket[0] == existingTicket[0] && ticket[1] == existingTicket[1])
+                                alreadyInOrder = true;
+                            break;
+                        }
+                    }
+
+                    if (alreadyInOrder)
+                        AnsiConsole.Write(new Markup("Вы уже выбрали это место.\n"));
+
+                    // проверка, свободно ли место
+                    else if (chosenFilm.screenings[indInScreenings].seatsAvailability[ticket[0]][ticket[1]] == '0')
+                    {
+                        // добавляем в заказ
+                        if (currOrder.ContainsKey(chosenFilm.screenings[indInScreenings]))
+                            currOrder[chosenFilm.screenings[indInScreenings]].Add(ticket);
+                        else
+                            currOrder.Add(chosenFilm.screenings[indInScreenings], new List<List<int>> { ticket });
+                    }
+                    else
+                        AnsiConsole.Write(new Markup("К сожалению, данное место уже куплено.\n"));
+
+                    AnsiConsole.Write(new Markup("Хотите продолжить покупку билетов на этот сеанс?\n"));
+                    answer = AnsiConsole.Prompt(new TextPrompt<string>("")
+                                                        .AddChoice("да")
+                                                        .AddChoice("нет")
+                                                        .InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз."));
+                }
+                catch (Exception)
+                {
+                    AnsiConsole.Write(new Markup("Неверное значение для ряда и/или места. Повторите ввод.\n"));
+                }
+            } while (answer == "да");
+
+            return currOrder;
+        }
+
+        public void MakeOrders()
+        {
+            Dictionary <Screening, List<List<int>>> reservedTickets = new Dictionary<Screening, List<List<int>>>();
+
+            string answer = "да"; // резервируем билеты
+            do
+            {
+                Dictionary<Screening, List<List<int>>> ticketsToReserve = ReadOrder();
+                foreach (KeyValuePair<Screening, List<List<int>>> kvp in ticketsToReserve)
+                {
+                    foreach (List<int> seatsData in kvp.Value)
+                    {
+                        if (!ticketsToReserve.ContainsKey(kvp.Key))
+                            ticketsToReserve.Add(kvp.Key, new List<List<int>>);
+                        ticketsToReserve[kvp.Key].Add(seatsData);
+                    }
+                } // добавили в бронирование
+                
+                AnsiConsole.Write(new Markup("Хотите продолжить ввод данных для покупки билетов?\n"));
+                answer = AnsiConsole.Prompt(new TextPrompt<string>("")
+                                                    .AddChoice("да")
+                                                    .AddChoice("нет")
+                                                    .InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз."));
+            } while (answer == "да");
+
 
         }
     }
@@ -331,14 +449,11 @@ class Program
                                                             .AddChoice("1")
                                                             .AddChoice("2")
                                                             .InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
-            Console.WriteLine();
             if (langCode == "1")
                 language = "русский";
             if (langCode == "2")
                 language = "английский";
         }
-
-       
 
         public static Film ChooseFilm()
         {
@@ -353,6 +468,16 @@ class Program
                     return film;
             }
             return new Film(); // dummyFilm
+        }
+        public int FindScreeningIndexInList(Screening screeningToFind)
+        {
+
+            for (int i = 0; i < screenings.Count; i++)
+            {
+                if (screenings[i].hall == screeningToFind.hall && screenings[i].time == screeningToFind.time)
+                    return i;
+            }
+            return 0; // dummy index
         }
     }
 
@@ -419,6 +544,29 @@ class Program
                     rowPrices.Add(int.Parse(item));
                 priceData.Add(rowPrices);
             }
+        }
+        public void Print_Hall_Data(string printChoice) // печать таблицы с ценами (по аргументу "prices") или доступностьюю мест (по аргументу "availability")
+        {
+            Table table = new Table().Border(TableBorder.DoubleEdge).AddColumn(new TableColumn("Место\nРяд"));
+
+            for (int i = 1; i < hall.seatsInRowNum + 1; i++)
+                table.AddColumn(new TableColumn(Convert.ToString(i)).Centered());
+
+            for (int i = 0; i < hall.rowsNum; i++)
+            {
+                table.AddEmptyRow();
+                table.UpdateCell(i, 0, new Text(Convert.ToString(i + 1)));
+
+                for (int j = 0; j < hall.seatsInRowNum; j++)
+                {
+                    if (printChoice == "availability")
+                        table.UpdateCell(i, j + 1, Convert.ToString(seatsAvailability[i][j]));
+                    else if (printChoice == "prices")
+                        table.UpdateCell(i, j + 1, Convert.ToString(priceData[i][j]));
+                }
+            }
+            AnsiConsole.Write(table);
+
         }
     }
 }
