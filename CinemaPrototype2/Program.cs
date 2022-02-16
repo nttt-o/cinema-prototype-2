@@ -335,25 +335,23 @@ class Program
 
             return currOrder;
         }
-        public bool Check_Balance(Dictionary<Screening, List<List<int>>> reserved) // проверка, достаточно ли у пользователя средств
+        public bool Check_Balance(List<Ticket> reserved) // проверка, достаточно ли у пользователя средств
         {
             Console.WriteLine("\nВыполняется проверка...\n");
             int ticketPriceSum = 0;
 
-            foreach (KeyValuePair<Screening, List<List<int>>> kvp in reserved)
+            foreach (Ticket ticket in reserved)
             {
-                foreach (List<int> seatsData in kvp.Value)
-                {
-                    int row = seatsData[0]; int seat = seatsData[1];
-                    ticketPriceSum = ticketPriceSum + kvp.Key.priceData[row][seat];
-                }
+                int row = ticket.seat[0]; int seat = ticket.seat[1];
+                ticket.SetPrice(ticket.screening.priceData[row][seat]);
+                ticketPriceSum = ticketPriceSum + ticket.screening.priceData[row][seat];
             }
             bool verificationStatus = ticketPriceSum <= balance;
             return verificationStatus;
         }
         public void MakeOrder()
         {
-            Dictionary<Screening, List<List<int>>> reservedTickets = new Dictionary<Screening, List<List<int>>>();
+            List<Ticket> reservedTickets = new List<Ticket>();
 
             string answer = "да"; // резервируем билеты
             do
@@ -363,9 +361,8 @@ class Program
                 {
                     foreach (List<int> seatsData in kvp.Value)
                     {
-                        if (!ticketsToReserve.ContainsKey(kvp.Key))
-                            ticketsToReserve.Add(kvp.Key, new List<List<int>>());
-                        ticketsToReserve[kvp.Key].Add(seatsData);
+                        Ticket currTicket = new Ticket(username, kvp.Key, seatsData);
+                        reservedTickets.Add(currTicket);
                     }
                 } // добавили в бронирование
 
@@ -403,14 +400,16 @@ class Program
 
             } // пополняем баланс или снимаем бронь и выходим
 
-            foreach (KeyValuePair<Screening, List<List<int>>> kvp in reservedTickets)
-                kvp.Key.UpdateSeats(this, kvp.Value);
-
-            Console.WriteLine("Покупка прошла успешно! Ваши билеты:");
-            foreach (var item in collection)
+            foreach (Ticket ticket in reservedTickets)
             {
+                ticket.screening.UpdateSeats(ticket.seat);
+                ticket.SetTimeBougth();
+                this.orders.Add(ticket);
+            } // вносим данные о покупке в системы
 
-            }
+            Console.WriteLine("Покупка прошла успешно! Ваши билеты:"); // печатаем купленные билеты для пользователя
+            foreach (Ticket ticket in reservedTickets)
+                ticket.Print();
 
         }
     }
@@ -653,16 +652,10 @@ class Program
             AnsiConsole.Write(table);
 
         }
-        public void UpdateSeats(User currUser, List<List<int>> ordered)
+        public void UpdateSeats(List<int> place)
         {
-            foreach (var place in ordered)
-            {
-                int row = place[0]; int seat = place[1];
-                seatsAvailability[row][seat] = 'x'; // вносим, что место было куплено
-                Ticket currTicket = new Ticket(currUser.username, this, place, priceData[row][seat]);
-                Ticket.all.Add(currTicket);
-                currUser.orders.Add(currTicket);
-            }
+            int row = place[0]; int seat = place[1];
+            seatsAvailability[row][seat] = 'x'; // вносим, что место было куплено
         }
     }
 
@@ -676,15 +669,20 @@ class Program
         public int price;
         public DateTime timeBought;
 
-        public Ticket(string username, Screening screening, List<int> seat, int price)
+        public Ticket(string username, Screening screening, List<int> seat)
         {
             this.username = username;
             this.screening = screening;
             this.seat = seat;
-            this.price = price;
+        }
+        public void SetTimeBougth()
+        {
             timeBought = DateTime.Now;
         }
-
+        public void SetPrice(int somePrice)
+        {
+            price = somePrice;
+        }
         public void Print()
         {
             Console.WriteLine($"Фильм {screening.film,15} | Зал {screening.hall, 15} | Время {screening.time.ToString("MM/dd/yyyy HH:mm")} | Ряд {seat[0], 2} | Место {seat[1], 2}");
