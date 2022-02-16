@@ -1,5 +1,6 @@
 ﻿using Spectre.Console;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 class Program
 {
@@ -56,9 +57,12 @@ class Program
     }
     static void UserInterface()
     {
+
+        User currUser = new User();
+        currUser.SetFIO();
         Console.WriteLine("Введите начальный баланс.");
         int initBalance = GetPositiveInt();
-        User currUser = new User { balance = initBalance };
+        currUser.balance = initBalance;
 
         while (true)
         {
@@ -206,8 +210,26 @@ class Program
         public static List<User> all = new List<User>();
 
         public int balance;
+        public string fio;
         Dictionary<Screening, List<List<int>>> orders = new Dictionary<Screening, List<List<int>>>();
 
+        public void SetFIO()
+        {
+            bool success = false;
+            Console.WriteLine("Введите ФИО:");
+            while (!success)
+            {
+                string inpFIO = Console.ReadLine();
+                string pattern = @"([А-ЯЁ][а-яё]+[\-\s]?){3,}";
+                if (Regex.IsMatch(inpFIO, pattern, RegexOptions.IgnoreCase))
+                {
+                    fio = inpFIO;
+                    success = true;
+                }
+                else
+                    Console.WriteLine("Повторите ввод.");
+            }
+        }
         public void UpdateBalance()
         {
             Console.WriteLine("Введите сумму, на которую хотите пополнить баланс.");
@@ -215,7 +237,6 @@ class Program
             balance = balance + toAdd;
             Console.WriteLine("Пополнение прошло успешно!");
         }
-
         public Dictionary<Screening, List<List<int>>> ReadOrder()
         {
             Dictionary<Screening, List<List<int>>> currOrder = new Dictionary<Screening, List<List<int>>>();
@@ -299,10 +320,25 @@ class Program
 
             return currOrder;
         }
+        public bool Check_Balance(Dictionary<Screening, List<List<int>>> reserved) // проверка, достаточно ли у пользователя средств
+        {
+            Console.WriteLine("\nВыполняется проверка...\n");
+            int ticketPriceSum = 0;
 
+            foreach (KeyValuePair<Screening, List<List<int>>> kvp in reserved)
+            {
+                foreach (List<int> seatsData in kvp.Value)
+                {
+                    int row = seatsData[0]; int seat = seatsData[1];
+                    ticketPriceSum = ticketPriceSum + kvp.Key.priceData[row][seat];
+                }
+            }
+            bool verificationStatus = ticketPriceSum <= balance;
+            return verificationStatus;
+        }
         public void MakeOrders()
         {
-            Dictionary <Screening, List<List<int>>> reservedTickets = new Dictionary<Screening, List<List<int>>>();
+            Dictionary<Screening, List<List<int>>> reservedTickets = new Dictionary<Screening, List<List<int>>>();
 
             string answer = "да"; // резервируем билеты
             do
@@ -313,11 +349,11 @@ class Program
                     foreach (List<int> seatsData in kvp.Value)
                     {
                         if (!ticketsToReserve.ContainsKey(kvp.Key))
-                            ticketsToReserve.Add(kvp.Key, new List<List<int>>);
+                            ticketsToReserve.Add(kvp.Key, new List<List<int>>());
                         ticketsToReserve[kvp.Key].Add(seatsData);
                     }
                 } // добавили в бронирование
-                
+
                 AnsiConsole.Write(new Markup("Хотите продолжить ввод данных для покупки билетов?\n"));
                 answer = AnsiConsole.Prompt(new TextPrompt<string>("")
                                                     .AddChoice("да")
@@ -325,10 +361,36 @@ class Program
                                                     .InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз."));
             } while (answer == "да");
 
+            if (reservedTickets.Count == 0)
+            {
+                Console.WriteLine("Сожалеем, что вы не приобрели ни одного билета. Пожалуйста, приходите к нам ещё!\n");
+                return;
+            }
+
+            bool isOkayToBuy = Check_Balance(reservedTickets);
+            while (!isOkayToBuy)
+            {
+                Console.WriteLine("Ошибка: недостаточно средств для покупки. Хотите пополнить баланс?");
+                string yn = AnsiConsole.Prompt(new TextPrompt<string>("")
+                                            .AddChoice("да")
+                                            .AddChoice("нет")
+                                            .InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз.\n"));
+                if (yn == "да")
+                {
+                    UpdateBalance();
+                    isOkayToBuy = Check_Balance(reservedTickets);
+                }
+                else
+                {
+                    Console.WriteLine($"Ваша бронь билетов аннулирована. На вашем счету остается {balance} рублей.");
+                    return;
+                }
+
+            } // пополняем баланс или снимаем бронь и выходим
+
 
         }
     }
-
     class Hall
     {
         public static List<Hall> all = new List<Hall>();
