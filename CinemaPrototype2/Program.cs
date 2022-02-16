@@ -59,7 +59,7 @@ class Program
     {
 
         User currUser = new User();
-        currUser.SetFIO();
+        currUser.SetUsername();
         Console.WriteLine("Введите начальный баланс.");
         int initBalance = GetPositiveInt();
         currUser.balance = initBalance;
@@ -78,7 +78,7 @@ class Program
             Console.WriteLine();
 
             if (command == "1")
-                currUser.MakeOrders();
+                currUser.MakeOrder();
 
             else if (command == "2")
             { }//ReturnTickets();
@@ -210,21 +210,36 @@ class Program
         public static List<User> all = new List<User>();
 
         public int balance;
-        public string fio;
-        Dictionary<Screening, List<List<int>>> orders = new Dictionary<Screening, List<List<int>>>();
+        public string username;
+        public List<Ticket> orders = new List<Ticket>();
 
-        public void SetFIO()
+        public void SetUsername()
         {
             bool success = false;
-            Console.WriteLine("Введите ФИО:");
+            Console.WriteLine("Введите свое уникальное имя пользователя:");
             while (!success)
             {
-                string inpFIO = Console.ReadLine();
-                string pattern = @"([А-ЯЁ][а-яё]+[\-\s]?){3,}";
-                if (Regex.IsMatch(inpFIO, pattern, RegexOptions.IgnoreCase))
+                string input = Console.ReadLine();
+                if (input.Length >= 1)
                 {
-                    fio = inpFIO;
-                    success = true;
+                    bool alreadyTaken = false;
+                    foreach (User existingUser in User.all)
+                    {
+                        if (input == existingUser.username)
+                        {
+                            alreadyTaken = true;
+                            break;
+                        }
+                    }
+
+                    if (alreadyTaken)
+                        Console.WriteLine("Данное имя уже занято.");
+
+                    else
+                    {
+                        username = input;
+                        success = true;
+                    }
                 }
                 else
                     Console.WriteLine("Повторите ввод.");
@@ -237,7 +252,7 @@ class Program
             balance = balance + toAdd;
             Console.WriteLine("Пополнение прошло успешно!");
         }
-        public Dictionary<Screening, List<List<int>>> ReadOrder()
+        public Dictionary<Screening, List<List<int>>> ReadOneScreeningOrder()
         {
             Dictionary<Screening, List<List<int>>> currOrder = new Dictionary<Screening, List<List<int>>>();
             string answer = "да";
@@ -336,14 +351,14 @@ class Program
             bool verificationStatus = ticketPriceSum <= balance;
             return verificationStatus;
         }
-        public void MakeOrders()
+        public void MakeOrder()
         {
             Dictionary<Screening, List<List<int>>> reservedTickets = new Dictionary<Screening, List<List<int>>>();
 
             string answer = "да"; // резервируем билеты
             do
             {
-                Dictionary<Screening, List<List<int>>> ticketsToReserve = ReadOrder();
+                Dictionary<Screening, List<List<int>>> ticketsToReserve = ReadOneScreeningOrder();
                 foreach (KeyValuePair<Screening, List<List<int>>> kvp in ticketsToReserve)
                 {
                     foreach (List<int> seatsData in kvp.Value)
@@ -388,6 +403,14 @@ class Program
 
             } // пополняем баланс или снимаем бронь и выходим
 
+            foreach (KeyValuePair<Screening, List<List<int>>> kvp in reservedTickets)
+                kvp.Key.UpdateSeats(this, kvp.Value);
+
+            Console.WriteLine("Покупка прошла успешно! Ваши билеты:");
+            foreach (var item in collection)
+            {
+
+            }
 
         }
     }
@@ -629,6 +652,42 @@ class Program
             }
             AnsiConsole.Write(table);
 
+        }
+        public void UpdateSeats(User currUser, List<List<int>> ordered)
+        {
+            foreach (var place in ordered)
+            {
+                int row = place[0]; int seat = place[1];
+                seatsAvailability[row][seat] = 'x'; // вносим, что место было куплено
+                Ticket currTicket = new Ticket(currUser.username, this, place, priceData[row][seat]);
+                Ticket.all.Add(currTicket);
+                currUser.orders.Add(currTicket);
+            }
+        }
+    }
+
+    class Ticket
+    {
+        public static List<Ticket> all = new List<Ticket>();
+
+        public string username;
+        public Screening screening;
+        public List<int> seat;
+        public int price;
+        public DateTime timeBought;
+
+        public Ticket(string username, Screening screening, List<int> seat, int price)
+        {
+            this.username = username;
+            this.screening = screening;
+            this.seat = seat;
+            this.price = price;
+            timeBought = DateTime.Now;
+        }
+
+        public void Print()
+        {
+            Console.WriteLine($"Фильм {screening.film,15} | Зал {screening.hall, 15} | Время {screening.time.ToString("MM/dd/yyyy HH:mm")} | Ряд {seat[0], 2} | Место {seat[1], 2}");
         }
     }
 }
