@@ -86,7 +86,7 @@ class Program
         } // добавляем сеансы для каждого фильма
 
     }
-    static void UserInterface()
+    static void UserInterface() 
     {
 
         User currUser = new User();
@@ -125,31 +125,31 @@ class Program
                 return;
         }
 
-    }
-    static void ExtraAdministratorInterface() // НЕ ЗАКОНЧЕН
+    } // ВОЗВРАТ БИЛЕТОВ НЕ РЕАЛИЗОВАН
+    static void ExtraAdministratorInterface()
     {
         while (true)
         {
-            Console.WriteLine("\nВы находитесь в меню администратора\n1 - посмотреть аналитику по продажам;\n2 - посмотреть клиентскую аналитику;\n3 - изменить данные о кинотеатре;\n4 - выйти из аккаунта администратора и вернуться к меню выбора интерфейса.");;
+            Console.WriteLine("\nВы находитесь в меню администратора\n1 - посмотреть аналитику по продажам;\n2 - посмотреть загруженность залов;\n3 - посмотреть клиентскую аналитику;\n4 - изменить данные о кинотеатре;\n5 - выйти из аккаунта администратора и вернуться к меню выбора интерфейса.");;
             string command = AnsiConsole.Prompt(new TextPrompt<string>("")
                                                             .AddChoice("1")
                                                             .AddChoice("2")
                                                             .AddChoice("3")
                                                             .AddChoice("4")
+                                                            .AddChoice("5")
                                                             .InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
-            if (command == "1")
-            {
+            if (command == "1") // аналитика по продажам
                 Administrator.GetSalesStatistics();
+            else if (command == "2")
+                Administrator.TrackHallLoad();
 
-            } // РЕАЛИЗОВАТЬ
-
-            else if (command == "2") // клиентская аналитика
+            else if (command == "3") // клиентская аналитика
                 Administrator.GetClientAnalytics();
 
-            else if (command == "3") // изменение данных
+            else if (command == "4") // изменение данных
                 Administrator.EditCinemaData();
 
-            else if (command == "4")
+            else if (command == "5")
                 return;
         }
     }
@@ -165,13 +165,13 @@ class Program
                 Console.WriteLine("Неверное значение. Повторите попытку.");
         }
     }
-    static DateTime GetDate()
+    static DateTime GetDateAndTime()
     {
         while (true)
         {
-            Console.WriteLine("Введите дату в формате ДД/ММ/ГГГГ ЧЧ:ММ");
+            Console.WriteLine("Введите дату в формате ДД.ММ.ГГГГ ЧЧ:ММ");
             string dateString = Console.ReadLine();
-            string format = "dd/MM/yyyy HH:mm";
+            string format = "dd.MM.yyyy HH:mm";
             try
             {
                 DateTime result = DateTime.ParseExact(dateString, format, CultureInfo.CurrentCulture);
@@ -185,6 +185,22 @@ class Program
             {
                 Console.WriteLine("Некорректный формат. Повторите ввод.");
             }
+        }
+    }
+    static DateOnly GetDate()
+    {
+        while (true)
+        {
+            Console.WriteLine("Введите дату в формате ДД.ММ.ГГ");
+            Console.Write("> ");
+            string inputTime = Console.ReadLine();
+            string format = "dd.MM.yyyy";
+            CultureInfo invariant = CultureInfo.InvariantCulture;
+            DateTime dt;
+            if (DateTime.TryParseExact(inputTime, format, invariant, DateTimeStyles.None, out dt))
+                return DateOnly.FromDateTime(dt);
+            else
+                Console.WriteLine("Неверный формат. Повторите попытку.");
         }
     }
     static TimeOnly GetTime()
@@ -204,6 +220,15 @@ class Program
                 Console.WriteLine("Неверный формат. Повторите попытку.");
         }
     }
+    static DateOnly GetRandomDate(DateOnly start, DateOnly end)
+    {
+        DateTime startDT = start.ToDateTime(TimeOnly.Parse("00:00:00"));
+        DateTime endDT = end.ToDateTime(TimeOnly.Parse("23:59:59"));
+        Random gen = new Random();
+        int range = (endDT - startDT).Days;
+        return DateOnly.FromDateTime(startDT.AddDays(gen.Next(range)));
+    }
+
 
     class Administrator
     {
@@ -264,7 +289,7 @@ class Program
                 else
                 {
                     Console.WriteLine("Выберите другой зал, этот уже зарезервирован для другого фильма.");
-                    AnsiConsole.Write(new Markup("\nХотите продолжитьвыбор зала?\n"));
+                    AnsiConsole.Write(new Markup("Хотите продолжить выбор зала?\n"));
                     string answer = AnsiConsole.Prompt(new TextPrompt<string>("")
                                                 .AddChoice("да")
                                                 .AddChoice("нет")
@@ -278,7 +303,7 @@ class Program
 
             Console.WriteLine($"\nВыберите время для показа фильма {currFilm.name} в зале {chosenHall.name}.");
 
-            DateTime showDate = GetDate();
+            DateTime showDate = GetDateAndTime();
             foreach (Screening screening in currFilm.screenings)
             {
                 if (screening.hall == chosenHall && screening.time == showDate)
@@ -483,7 +508,7 @@ class Program
                                     Console.WriteLine("На этот сеанс уже были куплены билеты. В изменении данных отказано.");
                                     continue;
                                 }
-                                chosenScreening.time = GetDate();
+                                chosenScreening.time = GetDateAndTime();
                             }
 
                         } // изменить информацию о сеансе
@@ -563,7 +588,7 @@ class Program
                                 continue;
                             }
 
-                            Console.WriteLine("Выберите фильм");
+                            Console.WriteLine("\nВыберите фильм");
                             Film chosenFilm = Film.ChooseFilm("screening count important");
                             Screening chosenScreening = chosenFilm.ChooseScreening();
 
@@ -646,7 +671,7 @@ class Program
                                                                 .InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
                 if (command == "1")
                 {
-                    Console.WriteLine("Выберите фильм.");
+                    Console.WriteLine("\nВыберите фильм.");
                     Film filmToAnalyse = Film.ChooseFilm("screening count not important");
                     if (filmToAnalyse.screenings.Count == 0)
                     {
@@ -655,11 +680,11 @@ class Program
                     } // нет ни одного сеанса - статистики тоже
 
                     bool certainScreeningChosen = false;
-                    Screening screeningToAnalyse;
+                    Screening screeningToAnalyse = new Screening(); // потом происходит присваивание реального сеанса
 
                     bool timeChosen = false;
-                    DateTime startTime;
-                    DateTime endTime;
+                    DateOnly startDay;
+                    DateOnly endDay;
 
                     bool timeOfTheDayChosen = false;
                     TimeOnly startTimeOfTheDay;
@@ -686,10 +711,10 @@ class Program
                         while (true)
                         {
                             Console.WriteLine("Введите начальную дату.");
-                            DateTime start = GetDate();
+                            startDay = GetDate();
                             Console.WriteLine("Введите конечную дату.");
-                            DateTime end = GetDate();
-                            if (start > end)
+                            endDay = GetDate();
+                            if (startDay > endDay)
                                 Console.WriteLine("Начальная дата не может быть позднее конечной. Повторите ввод.");
                             else
                             {
@@ -719,40 +744,90 @@ class Program
                         } // получаем время
                     }
 
+                    int seatsSold = 0;
+                    int currRevenue = 0;
+
                     if (certainScreeningChosen == true)
                     {
                         if (timeChosen)
                         {
+                            DateTime start;
+                            DateTime end;
+
                             if (timeOfTheDayChosen)
                             {
-
-                            }
+                                DateOnly randomDate = GetRandomDate(startDay, endDay); // случайный день из заданного администратором промежутка
+                                start = randomDate.ToDateTime(startTimeOfTheDay);
+                                end = randomDate.ToDateTime(endTimeOfTheDay);
+                            } // выбраны только дни
                             else
                             {
+                                start = startDay.ToDateTime(TimeOnly.Parse("00:00:00"));
+                                end = endDay.ToDateTime(TimeOnly.Parse("23:59:59"));
+                            } // выбраны дни и период дня
 
+                            List<Screening> allScreenings = new List<Screening>();
+
+                            foreach (User user in User.all)
+                            {
+                                List<Ticket> relevantTickets = user.orders.FindAll(order => order.screening == screeningToAnalyse && order.timeBought >= start && order.timeBought <= end);
+                                foreach (Ticket ticket in relevantTickets)
+                                {
+                                    seatsSold++;
+                                    currRevenue = currRevenue + ticket.price;
+                                    allScreenings.Add(ticket.screening);
+                                }
                             }
-                        }
+                        } // выбраны дни
                         else
                         {
+                            List<Screening> allScreenings = new List<Screening>();
 
-                        }
-                    }
+                            foreach (User user in User.all)
+                            {
+                                List<Ticket> relevantTickets = user.orders.FindAll(order => order.screening == screeningToAnalyse);
+                                foreach (Ticket ticket in relevantTickets)
+                                {
+                                    seatsSold++;
+                                    currRevenue = currRevenue + ticket.price;
+                                    allScreenings.Add(ticket.screening);
+                                }
+                            }
+                        } // не выбраны дни
+                    } // по одному сеансу
                     else if (timeChosen)
                     {
+                        DateTime start;
+                        DateTime end;
+
                         if (timeOfTheDayChosen)
                         {
-
-                        }
+                            DateOnly randomDate = GetRandomDate(startDay, endDay); // случайный день из заданного администратором промежутка
+                            start = randomDate.ToDateTime(startTimeOfTheDay);
+                            end = randomDate.ToDateTime(endTimeOfTheDay);
+                        } // выбраны только дни
                         else
                         {
+                            start = startDay.ToDateTime(TimeOnly.Parse("00:00:00"));
+                            end = endDay.ToDateTime(TimeOnly.Parse("23:59:59"));
+                        } // выбраны дни и период дня
+                        
+                        List<Screening> allScreenings = new List<Screening>();
 
+                        foreach (User user in User.all)
+                        {
+                            List<Ticket> relevantTickets = user.orders.FindAll(order => order.screening.film == filmToAnalyse && order.timeBought >= start && order.timeBought <= end);
+                            foreach (Ticket ticket in relevantTickets)
+                            {
+                                seatsSold++;
+                                currRevenue = currRevenue + ticket.price;
+                                allScreenings.Add(ticket.screening);
+                            }
                         }
-                    }
+
+                    } // по одному фильму по выбранным дням
                     else
                     {
-                        int seatsSold = 0;
-                        int seatsEmpty = 0;
-                        int currRevenue = 0;
                         List<Screening> allScreenings = new List<Screening>();
 
                         foreach (User user in User.all)
@@ -765,22 +840,22 @@ class Program
                                 allScreenings.Add(ticket.screening);
                             }
                         }
+                    } // по одному фильму без фильтров
 
-                        List<Screening> distinctScreenings = (List<Screening>)allScreenings.Distinct();
-                        int totalSeats = distinctScreenings.Sum(screening => screening.hall.rowsNum * screening.hall.seatsInRowNum);
-                        seatsEmpty = totalSeats - seatsSold;
-
-                        Console.WriteLine($"Продано {seatsSold} мест.");
-                        Console.WriteLine($"Свободно {seatsEmpty} мест.");
-                        Console.WriteLine($"Текущая выручка составляет {currRevenue} рублей");
-                    }
-                }
+                    Console.WriteLine($"\nПродано {seatsSold} мест.");
+                    Console.WriteLine($"Текущая выручка составляет {currRevenue} рублей");
+                } // по одному конкретному фильму
 
                 else if (command == "2")
                 {
-                    string chosenAgeRest;
-                    DateTime startTime;
-                    DateTime endTime;
+                    bool ageRestChosen = false;
+                    string chosenAgeRest = ""; // потом происходит присваивание реального ограничения
+
+                    bool timeChosen = false;
+                    DateOnly startDay;
+                    DateOnly endDay;
+
+                    bool timeOfTheDayChosen = false;
                     TimeOnly startTimeOfTheDay;
                     TimeOnly endTimeOfTheDay;
 
@@ -798,6 +873,7 @@ class Program
                                                         .AddChoice("16+")
                                                         .AddChoice("18+")
                                                         .InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
+                        ageRestChosen = true;
                     }
 
                     Console.WriteLine("Хотите выбрать определенный промежуток времени?");
@@ -810,13 +886,16 @@ class Program
                         while (true)
                         {
                             Console.WriteLine("Введите начальную дату.");
-                            DateTime start = GetDate();
+                            startDay = GetDate();
                             Console.WriteLine("Введите конечную дату.");
-                            DateTime end = GetDate();
-                            if (start > end)
+                            endDay = GetDate();
+                            if (startDay > endDay)
                                 Console.WriteLine("Начальная дата не может быть позднее конечной. Повторите ввод.");
                             else
+                            {
+                                timeChosen = true;
                                 break;
+                            }
                         } // получаем даты
 
                         Console.WriteLine("Хотите выбрать определенный период дня?");
@@ -833,15 +912,289 @@ class Program
                             if (startTimeOfTheDay > endTimeOfTheDay)
                                 Console.WriteLine("Начальная дата не может быть позднее конечной. Повторите ввод.");
                             else
+                            {
+                                timeOfTheDayChosen = true;
                                 break;
+                            }
                         } // получаем время
                     }
 
+                    int seatsSold = 0;
+                    int currRevenue = 0;
+
+                    if (ageRestChosen)
+                    {
+                        if (timeChosen)
+                        {
+                            DateTime start;
+                            DateTime end;
+
+                            if (timeOfTheDayChosen)
+                            {
+                                DateOnly randomDate = GetRandomDate(startDay, endDay); // случайный день из заданного администратором промежутка
+                                start = randomDate.ToDateTime(startTimeOfTheDay);
+                                end = randomDate.ToDateTime(endTimeOfTheDay);
+                            } // выбраны только дни
+                            else
+                            {
+                                start = startDay.ToDateTime(TimeOnly.Parse("00:00:00"));
+                                end = endDay.ToDateTime(TimeOnly.Parse("23:59:59"));
+                            } // выбраны дни и период дня
+
+                            List<Screening> allScreenings = new List<Screening>();
+
+                            foreach (User user in User.all)
+                            {
+                                List<Ticket> relevantTickets = user.orders.FindAll(order => order.screening.film.ageRestriction == chosenAgeRest && order.timeBought >= start && order.timeBought <= end);
+                                foreach (Ticket ticket in relevantTickets)
+                                {
+                                    seatsSold++;
+                                    currRevenue = currRevenue + ticket.price;
+                                    allScreenings.Add(ticket.screening);
+                                }
+                            }
+                        } // выбраны дни
+                        else
+                        {
+                            List<Screening> allScreenings = new List<Screening>();
+
+                            foreach (User user in User.all)
+                            {
+                                List<Ticket> relevantTickets = user.orders.FindAll(order => order.screening.film.ageRestriction == chosenAgeRest);
+                                foreach (Ticket ticket in relevantTickets)
+                                {
+                                    seatsSold++;
+                                    currRevenue = currRevenue + ticket.price;
+                                    allScreenings.Add(ticket.screening);
+                                }
+                            }
+                        } // по всем дням
+                    }  // все фильмы с определенным возрастным ограничением
+                    else
+                    {
+                        if (timeChosen)
+                        {
+                            DateTime start;
+                            DateTime end;
+
+                            if (timeOfTheDayChosen)
+                            {
+                                DateOnly randomDate = GetRandomDate(startDay, endDay); // случайный день из заданного администратором промежутка
+                                start = randomDate.ToDateTime(startTimeOfTheDay);
+                                end = randomDate.ToDateTime(endTimeOfTheDay);
+                            } // выбраны только дни
+                            else
+                            {
+                                start = startDay.ToDateTime(TimeOnly.Parse("00:00:00"));
+                                end = endDay.ToDateTime(TimeOnly.Parse("23:59:59"));
+                            } // выбраны дни и период дня
+
+                            List<Screening> allScreenings = new List<Screening>();
+
+                            foreach (User user in User.all)
+                            {
+                                List<Ticket> relevantTickets = user.orders.FindAll(order => order.timeBought >= start && order.timeBought <= end);
+                                foreach (Ticket ticket in relevantTickets)
+                                {
+                                    seatsSold++;
+                                    currRevenue = currRevenue + ticket.price;
+                                    allScreenings.Add(ticket.screening);
+                                }
+                            }
+
+                        } // выбраны дни
+                        else
+                        {
+                            List<Screening> allScreenings = new List<Screening>();
+
+                            foreach (User user in User.all)
+                            {
+                                List<Ticket> relevantTickets = user.orders;
+                                foreach (Ticket ticket in relevantTickets)
+                                {
+                                    seatsSold++;
+                                    currRevenue = currRevenue + ticket.price;
+                                    allScreenings.Add(ticket.screening);
+                                }
+                            }
+                        } // по всем дням
+                    } // все фильмы
+
+                    Console.WriteLine($"\nПродано {seatsSold} мест.");
+                    Console.WriteLine($"Текущая выручка составляет {currRevenue} рублей");
 
                 } // по всем фильмам
 
                 else if (command == "3")
                     return;
+            }
+        }
+        public static void TrackHallLoad()
+        {
+            while (true)
+            {
+                bool certainFilm = false;
+                Film filmChosen = new Film(); //  потом присваивается настоящий фильм
+
+                bool certainScreeningChosen = false;
+                Screening screeningChosen = new Screening(); // потом присваивается настоящий сеанс
+
+                bool ageRestChosen = false;
+                string chosenAgeRest = ""; // потом присваивается настоящее возрастное ограничение
+
+                bool certainHallChosen = false;
+                Hall hallChosen = new Hall(); // потом присваивается настоящий зал
+
+                bool timeChosen = false;
+                DateOnly startDay;
+                DateOnly endDay;
+
+                bool timeOfTheDayChosen = false;
+                TimeOnly startTimeOfTheDay;
+                TimeOnly endTimeOfTheDay;
+
+                Console.WriteLine("\nВы находитесь в режиме просмотра загруженности залов.");
+
+                string certainFilmHalls = AnsiConsole.Prompt(new TextPrompt<string>("Вас интересут залы, где идет в прокате один конкретный фильм?")
+                                                .AddChoice("да")
+                                                .AddChoice("нет")
+                                                .InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз."));
+                if (certainFilmHalls == "да")
+                {
+                    filmChosen = Film.ChooseFilm("screening count not important");
+                    if (filmChosen.halls.Count == 0)
+                    {
+                        Console.WriteLine("Данный фильм не идет в прокате ни в одном зале.");
+                        continue;
+                    }
+                    certainFilm = true;
+                }
+
+                else
+                {
+                    Console.WriteLine("Хотите ли вы выбрать конкретный возрастной рейтинг?");
+                    string isAgeRestNeeded = AnsiConsole.Prompt(new TextPrompt<string>("")
+                                                    .AddChoice("да")
+                                                    .AddChoice("нет")
+                                                    .InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз."));
+                    if (isAgeRestNeeded == "да")
+                    {
+                        chosenAgeRest = AnsiConsole.Prompt(new TextPrompt<string>("")
+                                                        .AddChoice("0+")
+                                                        .AddChoice("6+")
+                                                        .AddChoice("12+")
+                                                        .AddChoice("16+")
+                                                        .AddChoice("18+")
+                                                        .InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
+                        ageRestChosen = true;
+                    }
+
+                }
+
+                string certainHall = AnsiConsole.Prompt(new TextPrompt<string>("Вас интересует конкретный зал?")
+                                                .AddChoice("да")
+                                                .AddChoice("нет")
+                                                .InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз."));
+                if (certainHall == "да")
+                {
+                    if (certainFilm)
+                    {
+                        TextPrompt<string> hallChoicePrompt = new TextPrompt<string>("").InvalidChoiceMessage("Введен неверный вариант. Повторите попытку.");
+                        foreach (Hall hall in filmChosen.halls)
+                            hallChoicePrompt.AddChoice(hall.name);
+                        string chHallName = AnsiConsole.Prompt(hallChoicePrompt);
+
+                        foreach (Hall hall in filmChosen.halls)
+                        {
+                            if (hall.name == chHallName)
+                            {
+                                hallChosen = hall;
+                                break;
+                            }
+                        }
+
+                        string certainScreening = AnsiConsole.Prompt(new TextPrompt<string>("Вас интересует конкретный сеанс?")
+                                                .AddChoice("да")
+                                                .AddChoice("нет")
+                                                .InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз."));
+                        if (certainScreening == "да")
+                        {
+                            List<Screening> relevantScreenings = filmChosen.screenings.FindAll(screening => screening.hall.name == hallChosen.name);
+
+                            if (relevantScreenings.Count == 0)
+                            {
+                                Console.WriteLine("У выбранного ранее фильма в выбранном зале нет сеансов.");
+                                continue;
+                            }
+
+                            TextPrompt<string> scrChoicePrompt = new TextPrompt<string>("").InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз.");
+
+                            for (int i = 0; i < relevantScreenings.Count; i++)
+                            {
+                                Console.WriteLine($"{i + 1,4}: {relevantScreenings[i].hall.name,15} {relevantScreenings[i].time.ToString("dd/MM/yyyy HH:mm"),16}");
+                                scrChoicePrompt.AddChoice(Convert.ToString(i + 1));
+                            }
+
+                            Console.WriteLine("\nВведите номер одного выбранного сеанса:");
+                            int scrNum = int.Parse(AnsiConsole.Prompt(scrChoicePrompt)) - 1;
+
+                            screeningChosen = relevantScreenings[scrNum];
+                            certainScreeningChosen = true;
+                        }
+                    }
+                    else
+                    {
+                        hallChosen = Hall.ChooseHall();
+                    }
+                }
+
+                if (!certainScreeningChosen)
+                {
+                    Console.WriteLine("Хотите выбрать определенный промежуток времени?");
+                    string isTimeIntervalNeeded = AnsiConsole.Prompt(new TextPrompt<string>("")
+                                                    .AddChoice("да")
+                                                    .AddChoice("нет")
+                                                    .InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз."));
+                    if (isTimeIntervalNeeded == "да")
+                    {
+                        while (true)
+                        {
+                            Console.WriteLine("Введите начальную дату.");
+                            startDay = GetDate();
+                            Console.WriteLine("Введите конечную дату.");
+                            endDay = GetDate();
+                            if (startDay > endDay)
+                                Console.WriteLine("Начальная дата не может быть позднее конечной. Повторите ввод.");
+                            else
+                            {
+                                timeChosen = true;
+                                break;
+                            }
+                        } // получаем даты
+
+                        Console.WriteLine("Хотите выбрать определенный период дня?");
+                        string isTimeOfTheDayNeeded = AnsiConsole.Prompt(new TextPrompt<string>("")
+                                                    .AddChoice("да")
+                                                    .AddChoice("нет")
+                                                    .InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз."));
+                        while (true)
+                        {
+                            Console.WriteLine("Введите начальное время.");
+                            startTimeOfTheDay = GetTime();
+                            Console.WriteLine("Введите конечное время.");
+                            endTimeOfTheDay = GetTime();
+                            if (startTimeOfTheDay > endTimeOfTheDay)
+                                Console.WriteLine("Начальная дата не может быть позднее конечной. Повторите ввод.");
+                            else
+                            {
+                                timeOfTheDayChosen = true;
+                                break;
+                            }
+                        } // получаем время
+                    }
+                }
+
+                
 
             }
         }
@@ -1079,6 +1432,12 @@ class Program
         {
             List<User>sortedByTicketNum = all.OrderByDescending(o => o.orders.Count).ToList();
 
+            if (sortedByTicketNum.Count < topNum)
+            {
+                Console.WriteLine("Недостаточное число клиентов в базе.");
+                return;
+            }
+
             for (int i = 0; i < topNum - 1; i++)
                 Console.WriteLine($"{i+1}. {sortedByTicketNum[i].username}");
         }
@@ -1096,6 +1455,12 @@ class Program
             }
             List<ArrayList> sorted = userData.OrderByDescending(o => o[1]).ToList();
 
+            if (sorted.Count < topNum)
+            {
+                Console.WriteLine("Недостаточное число клиентов в базе.");
+                return;
+            }
+
             for (int i = 0; i < topNum - 1; i++)
                 Console.WriteLine($"{i + 1}. {sorted[i]}");
         }
@@ -1109,6 +1474,12 @@ class Program
                 userData.Add(userStats);
             }
             List<ArrayList> sorted = userData.OrderByDescending(o => o[1]).ToList();
+
+            if (sorted.Count < topNum)
+            {
+                Console.WriteLine("Недостаточное число клиентов в базе.");
+                return;
+            }
 
             for (int i = 0; i < topNum - 1; i++)
                 Console.WriteLine($"{i + 1}. {sorted[i]}");
@@ -1259,7 +1630,7 @@ class Program
         }
         public void SetLanguage()
         {
-            Console.WriteLine($"\nВведите язык ддя фильма {name}:");
+            Console.WriteLine($"\nВведите язык для фильма {name}:");
             string langCode = AnsiConsole.Prompt(new TextPrompt<string>("1 - русский, 2 - английский")
                                                             .AddChoice("1")
                                                             .AddChoice("2")
@@ -1575,4 +1946,59 @@ class Program
             Console.WriteLine($"Фильм {screening.film.name,15} | Зал {screening.hall.name, 15} | {screening.time.ToString("dd/MM/yyyy HH:mm")} | Ряд {seat[0] + 1, 2} | Место {seat[1] + 1, 2}");
         }
     }
+    public static class CompareObject
+    {
+        public static bool Compare<T>(T e1, T e2)
+        {
+            bool flag = true;
+            bool match = false;
+            int countFirst, countSecond;
+            foreach (PropertyInfo propObj1 in e1.GetType().GetProperties())
+            {
+                var propObj2 = e2.GetType().GetProperty(propObj1.Name);
+                if (propObj1.PropertyType.Name.Equals("List`1"))
+                {
+                    dynamic objList1 = propObj1.GetValue(e1, null);
+                    dynamic objList2 = propObj2.GetValue(e2, null);
+                    countFirst = objList1.Count;
+                    countSecond = objList2.Count;
+                    if (countFirst == countSecond)
+                    {
+                        countFirst = objList1.Count - 1;
+                        while (countFirst > -1)
+                        {
+                            match = false;
+                            countSecond = objList2.Count - 1;
+                            while (countSecond > -1)
+                            {
+                                match = Compare(objList1[countFirst], objList2[countSecond]);
+                                if (match)
+                                {
+                                    objList2.Remove(objList2[countSecond]);
+                                    countSecond = -1;
+                                    match = true;
+                                }
+                                if (match == false && countSecond == 0)
+                                {
+                                    return false;
+                                }
+                                countSecond--;
+                            }
+                            countFirst--;
+                        }
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                else if (!(propObj1.GetValue(e1, null).Equals(propObj2.GetValue(e2, null))))
+                {
+                    flag = false;
+                    return flag;
+                }
+            }
+            return flag;
+        }
+    } // https://www.c-sharpcorner.com/article/comparing-objects-in-c-sharp/
 }
