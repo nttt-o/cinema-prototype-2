@@ -663,12 +663,44 @@ class Program
         {
             while (true)
             {
-                Console.WriteLine("\nВы находитесь в режиме просмотра аналитики по продажам.");
-                Console.WriteLine("1 - посмотреть аналитику по одному конкретному фильму;");
-                Console.WriteLine("2 - посмотреть аналитику по всем фильмам;");
-                Console.WriteLine("3 - выйти из режима просмотра аналитики по продажам и вернуться к меню администратора.");
-                string command = AnsiConsole.Prompt(new TextPrompt<string>("").AddChoice("1").AddChoice("2").AddChoice("3")
+                //Console.WriteLine("\nВы находитесь в режиме просмотра аналитики по продажам.");
+                //Console.WriteLine("1 - посмотреть аналитику по одному конкретному фильму;");
+                //Console.WriteLine("2 - посмотреть аналитику по всем фильмам;");
+                //Console.WriteLine("3 - выйти из режима просмотра аналитики по продажам и вернуться к меню администратора.");
+                //string command = AnsiConsole.Prompt(new TextPrompt<string>("").AddChoice("1").AddChoice("2").AddChoice("3")
+                                                                //.InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
+
+                bool certainFilmChosen = false;
+                Film filmChosen = new Film(); //  потом присваивается настоящий фильм
+
+                bool certainScreeningChosen = false;
+                Screening screeningChosen = new Screening(); // потом присваивается настоящий сеанс
+
+                bool ageRestChosen = false;
+                string chosenAgeRest = ""; // потом присваивается настоящее возрастное ограничение
+
+                bool certainHallChosen = false;
+                Hall hallChosen = new Hall(); // потом присваивается настоящий зал
+
+                bool timeChosen = false;
+                DateOnly startDay;
+                DateOnly endDay;
+
+                bool timeOfTheDayChosen = false;
+                TimeOnly startTimeOfTheDay;
+                TimeOnly endTimeOfTheDay;
+
+                Console.WriteLine("\nВы находитесь в режиме просмотра загруженности залов.");
+                Console.WriteLine("1 - перейти к просмотру аналитики;");
+                Console.WriteLine("2 - выйти из режима просмотра загруженности залов и вернуться к меню администратора.");
+                string command = AnsiConsole.Prompt(new TextPrompt<string>("")
+                                                                .AddChoice("1")
+                                                                .AddChoice("2")
                                                                 .InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
+                if (command == "2")
+                    break;
+
+
                 if (command == "1")
                 {
                     Console.WriteLine("\nВыберите фильм.");
@@ -728,20 +760,25 @@ class Program
                                                     .AddChoice("да")
                                                     .AddChoice("нет")
                                                     .InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз."));
-                        while (true)
+                        
+                        if (isTimeOfTheDayNeeded == "да")
                         {
-                            Console.WriteLine("Введите начальное время.");
-                            startTimeOfTheDay = GetTime();
-                            Console.WriteLine("Введите конечное время.");
-                            endTimeOfTheDay = GetTime();
-                            if (startTimeOfTheDay > endTimeOfTheDay)
-                                Console.WriteLine("Начальная дата не может быть позднее конечной. Повторите ввод.");
-                            else
+                            while (true)
                             {
-                                timeOfTheDayChosen = true;
-                                break;
-                            }
-                        } // получаем время
+                                Console.WriteLine("Введите начальное время.");
+                                startTimeOfTheDay = GetTime();
+                                Console.WriteLine("Введите конечное время.");
+                                endTimeOfTheDay = GetTime();
+                                if (startTimeOfTheDay > endTimeOfTheDay)
+                                    Console.WriteLine("Начальная дата не может быть позднее конечной. Повторите ввод.");
+                                else
+                                {
+                                    timeOfTheDayChosen = true;
+                                    break;
+                                }
+                            } // получаем время
+                        }
+                        
                     }
 
                     int seatsSold = 0;
@@ -903,20 +940,24 @@ class Program
                                                     .AddChoice("да")
                                                     .AddChoice("нет")
                                                     .InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз."));
-                        while (true)
+                        
+                        if (isTimeOfTheDayNeeded == "да")
                         {
-                            Console.WriteLine("Введите начальное время.");
-                            startTimeOfTheDay = GetTime();
-                            Console.WriteLine("Введите конечное время.");
-                            endTimeOfTheDay = GetTime();
-                            if (startTimeOfTheDay > endTimeOfTheDay)
-                                Console.WriteLine("Начальная дата не может быть позднее конечной. Повторите ввод.");
-                            else
+                            while (true)
                             {
-                                timeOfTheDayChosen = true;
-                                break;
-                            }
-                        } // получаем время
+                                Console.WriteLine("Введите начальное время.");
+                                startTimeOfTheDay = GetTime();
+                                Console.WriteLine("Введите конечное время.");
+                                endTimeOfTheDay = GetTime();
+                                if (startTimeOfTheDay > endTimeOfTheDay)
+                                    Console.WriteLine("Начальная дата не может быть позднее конечной. Повторите ввод.");
+                                else
+                                {
+                                    timeOfTheDayChosen = true;
+                                    break;
+                                }
+                            } // получаем время
+                        }
                     }
 
                     int seatsSold = 0;
@@ -1033,7 +1074,7 @@ class Program
         {
             while (true)
             {
-                bool certainFilm = false;
+                bool certainFilmChosen = false;
                 Film filmChosen = new Film(); //  потом присваивается настоящий фильм
 
                 bool certainScreeningChosen = false;
@@ -1054,8 +1095,16 @@ class Program
                 TimeOnly endTimeOfTheDay;
 
                 Console.WriteLine("\nВы находитесь в режиме просмотра загруженности залов.");
+                Console.WriteLine("1 - перейти к просмотру аналитики;");
+                Console.WriteLine("2 - выйти из режима просмотра загруженности залов и вернуться к меню администратора.");
+                string command = AnsiConsole.Prompt(new TextPrompt<string>("")
+                                                                .AddChoice("1")
+                                                                .AddChoice("2")
+                                                                .InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
+                if (command == "2")
+                    break;
 
-                string certainFilmHalls = AnsiConsole.Prompt(new TextPrompt<string>("Вас интересут залы, где идет в прокате один конкретный фильм?")
+                string certainFilmHalls = AnsiConsole.Prompt(new TextPrompt<string>("\nВас интересут залы, где идет в прокате один конкретный фильм?")
                                                 .AddChoice("да")
                                                 .AddChoice("нет")
                                                 .InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз."));
@@ -1067,12 +1116,12 @@ class Program
                         Console.WriteLine("Данный фильм не идет в прокате ни в одном зале.");
                         continue;
                     }
-                    certainFilm = true;
+                    certainFilmChosen = true;
                 }
 
                 else
                 {
-                    Console.WriteLine("Хотите ли вы выбрать конкретный возрастной рейтинг?");
+                    Console.WriteLine("\nХотите ли вы выбрать конкретный возрастной рейтинг?");
                     string isAgeRestNeeded = AnsiConsole.Prompt(new TextPrompt<string>("")
                                                     .AddChoice("да")
                                                     .AddChoice("нет")
@@ -1091,13 +1140,13 @@ class Program
 
                 }
 
-                string certainHall = AnsiConsole.Prompt(new TextPrompt<string>("Вас интересует конкретный зал?")
+                string certainHall = AnsiConsole.Prompt(new TextPrompt<string>("\nВас интересует конкретный зал?")
                                                 .AddChoice("да")
                                                 .AddChoice("нет")
                                                 .InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз."));
                 if (certainHall == "да")
                 {
-                    if (certainFilm)
+                    if (certainFilmChosen)
                     {
                         TextPrompt<string> hallChoicePrompt = new TextPrompt<string>("").InvalidChoiceMessage("Введен неверный вариант. Повторите попытку.");
                         foreach (Hall hall in filmChosen.halls)
@@ -1150,7 +1199,7 @@ class Program
 
                 if (!certainScreeningChosen)
                 {
-                    Console.WriteLine("Хотите выбрать определенный промежуток времени?");
+                    Console.WriteLine("\nХотите выбрать определенный промежуток времени?");
                     string isTimeIntervalNeeded = AnsiConsole.Prompt(new TextPrompt<string>("")
                                                     .AddChoice("да")
                                                     .AddChoice("нет")
@@ -1177,25 +1226,86 @@ class Program
                                                     .AddChoice("да")
                                                     .AddChoice("нет")
                                                     .InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз."));
-                        while (true)
+                        
+                        if (isTimeOfTheDayNeeded == "да")
                         {
-                            Console.WriteLine("Введите начальное время.");
-                            startTimeOfTheDay = GetTime();
-                            Console.WriteLine("Введите конечное время.");
-                            endTimeOfTheDay = GetTime();
-                            if (startTimeOfTheDay > endTimeOfTheDay)
-                                Console.WriteLine("Начальная дата не может быть позднее конечной. Повторите ввод.");
-                            else
+                            while (true)
                             {
-                                timeOfTheDayChosen = true;
-                                break;
-                            }
-                        } // получаем время
+                                Console.WriteLine("Введите начальное время.");
+                                startTimeOfTheDay = GetTime();
+                                Console.WriteLine("Введите конечное время.");
+                                endTimeOfTheDay = GetTime();
+                                if (startTimeOfTheDay > endTimeOfTheDay)
+                                    Console.WriteLine("Начальная дата не может быть позднее конечной. Повторите ввод.");
+                                else
+                                {
+                                    timeOfTheDayChosen = true;
+                                    break;
+                                }
+                            } // получаем время
+                        }
                     }
                 }
 
-                
+                List<Screening> allScreenings = new List<Screening>();
+                foreach (Film film in Film.all)
+                    allScreenings.AddRange(film.screenings);
 
+                if (certainFilmChosen)
+                    allScreenings = allScreenings.Where(screening => screening.film.name == filmChosen.name).ToList();
+
+                if (ageRestChosen)
+                    allScreenings = allScreenings.Where(screening => screening.film.ageRestriction == chosenAgeRest).ToList();
+
+                if (certainHallChosen)
+                    allScreenings = allScreenings.Where(screening => screening.hall.name == hallChosen.name).ToList();
+
+                if (certainScreeningChosen)
+                    allScreenings = allScreenings.Where(screening => screening.film.name == screeningChosen.film.name && screening.hall.name == screeningChosen.hall.name && screening.time == screeningChosen.time).ToList();
+
+                if (timeChosen)
+                {
+                    DateTime start;
+                    DateTime end;
+
+                    if (timeOfTheDayChosen)
+                    {
+                        DateOnly randomDate = GetRandomDate(startDay, endDay); // случайный день из заданного администратором промежутка
+                        start = randomDate.ToDateTime(startTimeOfTheDay);
+                        end = randomDate.ToDateTime(endTimeOfTheDay);
+                    } // выбраны только дни
+                    else
+                    {
+                        start = startDay.ToDateTime(TimeOnly.Parse("00:00:00"));
+                        end = endDay.ToDateTime(TimeOnly.Parse("23:59:59"));
+                    } // выбраны дни и период дня
+
+                    allScreenings = allScreenings.Where(screening => screening.time >= start && screening.time <= end).ToList();
+
+
+
+
+                }
+
+                int seatsSold = 0;
+                int seatsEmpty = 0;
+
+                foreach (Screening screening in allScreenings)
+                {
+                    for (int i = 0; i < screening.hall.rowsNum; i++)
+                    {
+                        for (int j = 0; j < screening.hall.seatsInRowNum; j++)
+                        {
+                            if (screening.seatsAvailability[i][j] == '0')
+                                seatsEmpty++;
+                            else
+                                seatsSold++;
+                        }
+                    }
+                }
+
+                Console.WriteLine($"\nПродано {seatsSold} мест.");
+                Console.WriteLine($"Свободно {seatsEmpty} мест.");
             }
         }
     }
@@ -1946,59 +2056,4 @@ class Program
             Console.WriteLine($"Фильм {screening.film.name,15} | Зал {screening.hall.name, 15} | {screening.time.ToString("dd/MM/yyyy HH:mm")} | Ряд {seat[0] + 1, 2} | Место {seat[1] + 1, 2}");
         }
     }
-    public static class CompareObject
-    {
-        public static bool Compare<T>(T e1, T e2)
-        {
-            bool flag = true;
-            bool match = false;
-            int countFirst, countSecond;
-            foreach (PropertyInfo propObj1 in e1.GetType().GetProperties())
-            {
-                var propObj2 = e2.GetType().GetProperty(propObj1.Name);
-                if (propObj1.PropertyType.Name.Equals("List`1"))
-                {
-                    dynamic objList1 = propObj1.GetValue(e1, null);
-                    dynamic objList2 = propObj2.GetValue(e2, null);
-                    countFirst = objList1.Count;
-                    countSecond = objList2.Count;
-                    if (countFirst == countSecond)
-                    {
-                        countFirst = objList1.Count - 1;
-                        while (countFirst > -1)
-                        {
-                            match = false;
-                            countSecond = objList2.Count - 1;
-                            while (countSecond > -1)
-                            {
-                                match = Compare(objList1[countFirst], objList2[countSecond]);
-                                if (match)
-                                {
-                                    objList2.Remove(objList2[countSecond]);
-                                    countSecond = -1;
-                                    match = true;
-                                }
-                                if (match == false && countSecond == 0)
-                                {
-                                    return false;
-                                }
-                                countSecond--;
-                            }
-                            countFirst--;
-                        }
-                    }
-                    else
-                    {
-                        return false;
-                    }
-                }
-                else if (!(propObj1.GetValue(e1, null).Equals(propObj2.GetValue(e2, null))))
-                {
-                    flag = false;
-                    return flag;
-                }
-            }
-            return flag;
-        }
-    } // https://www.c-sharpcorner.com/article/comparing-objects-in-c-sharp/
 }
