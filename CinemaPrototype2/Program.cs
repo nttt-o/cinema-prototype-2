@@ -41,13 +41,13 @@ class Program
             else if (command == "3")
             {
                 Console.WriteLine("Завершаю работу...");
-                string hallFilename = @"C:\Users\Наташа\source\repos\CinemaPrototype2\CinemaPrototype2\halls.csv";
+                string hallFilename = @"halls.csv";
                 Hall.UpdateFile(hallFilename);
 
-                string filmFilename = @"C:\Users\Наташа\source\repos\CinemaPrototype2\CinemaPrototype2\films.csv";
+                string filmFilename = @"films.csv";
                 Film.UpdateFile(filmFilename);
 
-                string screeningFilename = @"C:\Users\Наташа\source\repos\CinemaPrototype2\CinemaPrototype2\screenings.csv";
+                string screeningFilename = @"screenings.csv";
                 Screening.UpdateFile(screeningFilename);
                 break;
             }
@@ -57,13 +57,13 @@ class Program
 
     static void StartAdministratorInterface()
     {
-        string hallFilename = @"C:\Users\Наташа\source\repos\CinemaPrototype2\CinemaPrototype2\halls.csv";
+        string hallFilename = @"C:halls.csv";
         Hall.ReadFile(hallFilename);
 
-        string filmFilename = @"C:\Users\Наташа\source\repos\CinemaPrototype2\CinemaPrototype2\films.csv";
+        string filmFilename = @"C:films.csv";
         Film.ReadFile(filmFilename);
 
-        string screeningFilename = @"C:\Users\Наташа\source\repos\CinemaPrototype2\CinemaPrototype2\screenings.csv";
+        string screeningFilename = @"screenings.csv";
         Screening.ReadFile(screeningFilename);
         foreach (Film film in Film.all)
         {
@@ -234,9 +234,13 @@ class Program
             newHall.SetType();
             Hall.all.Add(newHall);
         }
-        public static bool AddNewScreening(Film currFilm)
+        public static void AddNewScreening(Film currFilm)
         {
-            bool isSuccessful = false;
+            if (Hall.all.Count == 0)
+            {
+                Console.WriteLine("Ошибка: в базе нет ни одного зала.");
+                return;
+            }
             
             Console.WriteLine($"\nВыберите зал для показа фильма {currFilm.name}");
 
@@ -275,7 +279,7 @@ class Program
                                                 .InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
                     Console.WriteLine();
                     if (answer == "нет")
-                        return isSuccessful;
+                        return;
                 }
             }
             currFilm.halls.Add(chosenHall);
@@ -288,16 +292,14 @@ class Program
                 if (screening.hall == chosenHall && screening.time == showDate)
                 {
                     Console.WriteLine("Данный сеанс уже есть в базе. В добавлении отказано.");
-                    isSuccessful = true;
-                    return isSuccessful;
+                    return;
                 }
             }
             Screening newScreening = new Screening { film = currFilm, hall = chosenHall, time = showDate };
             newScreening.SetInitialAvailability();
             newScreening.SetInitialPrices();
             currFilm.screenings.Add(newScreening);
-            isSuccessful = true;
-            return isSuccessful;
+            return;
         }
         public bool Check_Password() // проверка пароля для входа в интерфейс администратора
         {
@@ -334,8 +336,8 @@ class Program
                     string answer = "да";
                     do
                     {
-                        Console.WriteLine("\nВы находитесь режиме добавления данных о кинотеатре.");
-                        Console.WriteLine("1 - добавить фильм;\n2 - добавить зал;\n3 - добавить сеанс;\n4-выйти из режима добавления данных и вернуться к режиму изменения данных.");
+                        Console.WriteLine("\nВы находитесь в режиме добавления данных о кинотеатре.");
+                        Console.WriteLine("1 - добавить фильм;\n2 - добавить зал;\n3 - добавить сеанс;\n4 - выйти из режима добавления данных и вернуться к режиму изменения данных.");
                         string editCommand = AnsiConsole.Prompt(new TextPrompt<string>("").AddChoice("1").AddChoice("2").AddChoice("3")
                                                                         .InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
                         if (editCommand == "1")
@@ -351,7 +353,8 @@ class Program
                                 Console.WriteLine("В базе нет фильмов. Добавить сеанс к конкретному фильму невозможно.");
                                 continue;
                             }
-                            
+
+                            Console.WriteLine("Выберите фильм.");
                             Film filmAddScreeningFor = Film.ChooseFilm("screening count not important");
                             AddNewScreening(filmAddScreeningFor);
                         }
@@ -450,6 +453,8 @@ class Program
                             Film chosenFilm = Film.ChooseFilm("screening count important");
                             Screening chosenScreening = chosenFilm.ChooseScreening();
 
+                            
+
                             Console.WriteLine("\nВыберите действие.\n1 - пометить места как занятые (не учитываются для аналитики, в отличие от купленных пользователями);\n2 - изменить цены;\n3 - изменить время");
                             string action = AnsiConsole.Prompt(new TextPrompt<string>("").AddChoice("1").AddChoice("2").AddChoice("3")
                                                                             .InvalidChoiceMessage("Введен неверный вариант. Пожалуйста, попробуйте еще раз."));
@@ -484,7 +489,7 @@ class Program
                                 bool canBeEdited = chosenScreening.CanTimeBeEdited();
                                 if (!canBeEdited)
                                 {
-                                    Console.WriteLine("На этот сеанс уже были куплены билеты. В изменении данных отказано.");
+                                    Console.WriteLine("На этот сеанс уже были куплены билеты. В изменении времени показа отказано.");
                                     continue;
                                 }
                                 chosenScreening.time = GetDateAndTime();
@@ -679,6 +684,7 @@ class Program
                         continue;
                     }
 
+                    Console.WriteLine("\nВыберите фильм");
                     Film filmChosen = Film.ChooseFilm("screening count not important");
                     allTickets = allTickets.Where(ticket => ticket.screening.film.name == filmChosen.name).ToList();
                 }
@@ -691,6 +697,7 @@ class Program
                         continue;
                     }
 
+                    Console.WriteLine("\nВыберите зал.");
                     Hall hallChosen = Hall.ChooseHall();
                     allTickets = allTickets.Where(ticket => ticket.screening.hall.name == hallChosen.name).ToList();
                 }
@@ -712,7 +719,7 @@ class Program
 
                     for (int i = 0; i < allScreenings.Count; i++)
                     {
-                        Console.WriteLine($"{i + 1,4}: {allScreenings[i].hall.name,15} {allScreenings[i].time.ToString("dd/MM/yyyy HH:mm"),16}");
+                        Console.WriteLine($"{i + 1,4}: {allScreenings[i].film.name,20} {allScreenings[i].hall.name,10} {allScreenings[i].time.ToString("dd/MM/yyyy HH:mm"),16}");
                         scrChoicePrompt.AddChoice(Convert.ToString(i + 1));
                     }
 
@@ -727,7 +734,7 @@ class Program
                 {
                     while (true)
                     {
-                        Console.WriteLine("Введите начальную дату.");
+                        Console.WriteLine("\nВведите начальную дату.");
                         DateOnly startDay = GetDate();
                         Console.WriteLine("Введите конечную дату.");
                         DateOnly endDay = GetDate();
@@ -747,7 +754,7 @@ class Program
                 {
                     while (true)
                     {
-                        Console.WriteLine("Введите начальное время.");
+                        Console.WriteLine("\nВведите начальное время.");
                         TimeOnly startTime = GetTime();
                         Console.WriteLine("Введите конечное время.");
                         TimeOnly endTime = GetTime();
@@ -769,6 +776,7 @@ class Program
 
                 if (filters.Any(filter => filter == "Конкретный возрастной рейтинг"))
                 {
+                    Console.WriteLine("\nВведите возрастной рейтинг.");
                     string chosenAgeRest = AnsiConsole.Prompt(new TextPrompt<string>("")
                                                         .AddChoice("0+")
                                                         .AddChoice("6+")
@@ -824,6 +832,7 @@ class Program
                 {
                     if (Film.all.Count == 0)
                     {
+                        Console.WriteLine("\nВыберите фильм");
                         Console.WriteLine("В базе нет ни одного фильма для выбора");
                         continue;
                     }
@@ -840,6 +849,7 @@ class Program
                         continue;
                     }
 
+                    Console.WriteLine("\nВыберите зал.");
                     Hall hallChosen = Hall.ChooseHall();
                     allScreenings = allScreenings.Where(screening => screening.hall.name == hallChosen.name).ToList();
                 }
@@ -859,15 +869,15 @@ class Program
 
                     TextPrompt<string> scrChoicePrompt = new TextPrompt<string>("").InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз.");
 
-                    for (int i = 0; i < allScreenings.Count; i++)
+                    for (int i = 0; i < screeningsToChooseFrom.Count; i++)
                     {
-                        Console.WriteLine($"{i + 1,4}: {allScreenings[i].hall.name,15} {allScreenings[i].time.ToString("dd/MM/yyyy HH:mm"),16}");
+                        Console.WriteLine($"{i + 1,4}: {screeningsToChooseFrom[i].film.name,20} {screeningsToChooseFrom[i].hall.name,10} {screeningsToChooseFrom[i].time.ToString("dd/MM/yyyy HH:mm"),16}");
                         scrChoicePrompt.AddChoice(Convert.ToString(i + 1));
                     }
 
                     Console.WriteLine("\nВведите номер одного выбранного сеанса:");
                     int scrNum = int.Parse(AnsiConsole.Prompt(scrChoicePrompt)) - 1;
-                    Screening screeningChosen = allScreenings[scrNum];
+                    Screening screeningChosen = screeningsToChooseFrom[scrNum];
 
                     allScreenings = allScreenings.Where(screening => screening.film.name == screeningChosen.film.name && screening.hall.name == screeningChosen.hall.name && screening.time == screeningChosen.time).ToList();
                 }
@@ -876,7 +886,7 @@ class Program
                 {
                     while (true)
                     {
-                        Console.WriteLine("Введите начальную дату.");
+                        Console.WriteLine("\nВведите начальную дату.");
                         DateOnly startDay = GetDate();
                         Console.WriteLine("Введите конечную дату.");
                         DateOnly endDay = GetDate();
@@ -896,7 +906,7 @@ class Program
                 {
                     while (true)
                     {
-                        Console.WriteLine("Введите начальное время.");
+                        Console.WriteLine("\nВведите начальное время.");
                         TimeOnly startTime = GetTime();
                         Console.WriteLine("Введите конечное время.");
                         TimeOnly endTime = GetTime();
@@ -918,6 +928,7 @@ class Program
 
                 if (filters.Any(filter => filter == "Конкретный возрастной рейтинг"))
                 {
+                    Console.WriteLine("\nВведите возрастной рейтинг.");
                     string chosenAgeRest = AnsiConsole.Prompt(new TextPrompt<string>("")
                                                         .AddChoice("0+")
                                                         .AddChoice("6+")
@@ -1005,11 +1016,9 @@ class Program
             string answer = "да";
             
             Console.WriteLine("\nВыберите фильм.");
-            
             Film chosenFilm = Film.ChooseFilm("choose screening after");
             Console.WriteLine();
           
-
             Screening chosenScreening = chosenFilm.ChooseScreening();
             AnsiConsole.Write(new Markup("\nДоступные места [green](0 - место доступно;[/] [red] x - место выкуплено)[/]\n"));
             chosenScreening.PrintHallData("availability");
@@ -1100,6 +1109,12 @@ class Program
         {
             List<Ticket> reservedTickets = new List<Ticket>();
 
+            if (Film.all.Count == 0)
+            {
+                Console.WriteLine("Доступных фильмов нет");
+                return;
+            }
+
             int totalScreeningCount = 0;
             foreach (Film film in Film.all)
                 totalScreeningCount = totalScreeningCount + film.screenings.Count;
@@ -1171,7 +1186,7 @@ class Program
                 balance = balance - ticket.price;
             }
 
-            Console.WriteLine($"\nНа вашем сету осталось {balance} рублей.");
+            Console.WriteLine($"\nНа вашем счету осталось {balance} рублей.");
 
         }
         public void PrintAllTickets()
@@ -1195,7 +1210,7 @@ class Program
                 return;
             }
 
-            for (int i = 0; i < topNum - 1; i++)
+            for (int i = 0; i <= topNum - 1; i++)
                 Console.WriteLine($"{i+1}. {sortedByTicketNum[i].username}");
         }
         public static void GreatestDistinctScreeningTicketNum(int topNum)
@@ -1218,7 +1233,7 @@ class Program
                 return;
             }
 
-            for (int i = 0; i < topNum - 1; i++)
+            for (int i = 0; i <= topNum - 1; i++)
                 Console.WriteLine($"{i + 1}. {sorted[i]}");
         }
         public static void GreatestMoneyAmountSpent(int topNum)
@@ -1238,7 +1253,7 @@ class Program
                 return;
             }
 
-            for (int i = 0; i < topNum - 1; i++)
+            for (int i = 0; i <= topNum - 1; i++)
                 Console.WriteLine($"{i + 1}. {sorted[i]}");
         }
     }
@@ -1437,9 +1452,15 @@ class Program
             return canBeEdited;
         }
         public Screening ChooseScreening()
-        {
+        {            
             List<Screening> relevantScreenings = screenings.FindAll(screening => screening.time > DateTime.Now);
             relevantScreenings.Sort((x, y) => x.time.CompareTo(y.time));
+
+            if (relevantScreenings.Count == 0)
+            {
+                Console.WriteLine("Актуальных сеансов на данный фильм нет.");
+                return new Screening();
+            }
             TextPrompt<string> scrChoicePrompt = new TextPrompt<string>("").InvalidChoiceMessage("Введена неверная команда. Пожалуйста, попробуйте еще раз.");
 
             for (int i = 0; i < relevantScreenings.Count; i++)
@@ -1658,7 +1679,7 @@ class Program
 
             do
             {
-                AnsiConsole.Write(new Markup("Введите один номер места в формате '<номер ряда> <номер места>'.\nЧтобы вернуться в режим изменения данных, введите 'м'.[/]\n"));
+                AnsiConsole.Write(new Markup("Введите один номер места в формате '<номер ряда> <номер места>'.\nЧтобы вернуться в режим изменения данных, введите 'м'.\n"));
                 string input = AnsiConsole.Prompt(new TextPrompt<string>("> "));
 
                 if (input == "м")
@@ -1673,8 +1694,8 @@ class Program
 
                     do
                     {
-                        AnsiConsole.Write(new Markup("[lightgoldenrod2]Введите новую цену для выбранного места.[/]\n"));
-                        AnsiConsole.Write(new Markup("[lightgoldenrod2]Если вы передумали менять цену на данное место, введите 'м'.[/]\n"));
+                        AnsiConsole.Write(new Markup("Введите новую цену для выбранного места.\n"));
+                        AnsiConsole.Write(new Markup("Если вы передумали менять цену на данное место, введите 'м'.\n"));
                         string strPrice = AnsiConsole.Prompt(new TextPrompt<string>("> "));
 
                         if (strPrice == "м")
